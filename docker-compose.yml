@@ -37,11 +37,11 @@ services:
     environment:
       TZ: "Asia/Tokyo"
 
-  front:
+  client:
     build: docker/node
     tty: true
     volumes:
-      - ./src/web:/app/
+      - ./src/client:/app/
     ports:
       - 3000:3000
     working_dir: /app
