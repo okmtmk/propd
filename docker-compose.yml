@@ -1,0 +1,50 @@
+version: '3'
+services:
+  database:
+    image: postgres:13
+    expose:
+      - 5432
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: "dbuser"
+      POSTGRES_PASSWORD: "dbpassword"
+      POSTGRES_DB: "propd"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      TZ: "Asia/Tokyo"
+
+  phppgadmin:
+    image: bitnami/phppgadmin
+    links:
+      - database
+    ports:
+      - 8836:8080
+    environment:
+      DATABASE_HOST: database
+      DATABASE_PORT_NUMBER: 5432
+
+  api:
+    build: docker/php
+    expose:
+      - 80
+    ports:
+      - 8080:80
+    volumes:
+      - ./src/api/:/var/www/app/
+    working_dir: /var/www/app
+    links:
+      - database
+    environment:
+      TZ: "Asia/Tokyo"
+
+  front:
+    build: docker/node
+    tty: true
+    volumes:
+      - ./src/web:/app/
+    ports:
+      - 3000:3000
+    working_dir: /app
+    stdin_open: true
+    environment:
+      CHOKIDAR_USERPOLLING: "true"
