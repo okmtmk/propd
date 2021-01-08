@@ -1,0 +1,87 @@
+version: '3'
+services:
+  app-db:
+    image: postgres:13
+    expose:
+      - 5432
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: "dbuser"
+      POSTGRES_PASSWORD: "dbpassword"
+      POSTGRES_DB: "propd"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      TZ: "Asia/Tokyo"
+
+  auth-db:
+    image: postgres:13
+    expose:
+      - 5432
+    ports:
+      - 5431:5432
+    environment:
+      POSTGRES_USER: "dbuser"
+      POSTGRES_PASSWORD: "dbpassword"
+      POSTGRES_DB: "propd_auth"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      TZ: "Asia/Tokyo"
+
+  phppgadmin:
+    image: bitnami/phppgadmin
+    links:
+      - app-db
+    ports:
+      - 8836:8080
+    environment:
+      DATABASE_HOST: app-db
+      DATABASE_PORT_NUMBER: 5432
+
+  phppgadmin-auth:
+    image: bitnami/phppgadmin
+    links:
+      - auth-db
+    ports:
+      - 8837:8080
+    environment:
+      DATABASE_HOST: auth-db
+      DATABASE_PORT_NUMBER: 5432
+
+  api:
+    build: docker/php
+    expose:
+      - 80
+    ports:
+      - 8080:80
+    volumes:
+      - ./src/api/:/var/www/app/
+    working_dir: /var/www/app
+    links:
+      - app-db
+    environment:
+      TZ: "Asia/Tokyo"
+
+  authorization:
+    build: docker/php
+    expose:
+      - 80
+    ports:
+      - 8081:80
+    volumes:
+      - ./src/authorization/:/var/www/app/
+    working_dir: /var/www/app
+    links:
+      - auth-db
+    environment:
+      TZ: "Asia/Tokyo"
+
+  client:
+    build: docker/node
+    tty: true
+    volumes:
+      - ./src/client:/app/
+    ports:
+      - 3000:3000
+    working_dir: /app
+    stdin_open: true
+    environment:
+      CHOKIDAR_USERPOLLING: "true"
